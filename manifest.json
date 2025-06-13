@@ -1,0 +1,34 @@
+{
+    "name": "Focus mode extension",
+    "version": "1.0.0",
+    "description": "Blocks and safes you time from destracting sites",
+    "permissions": ["tabs"],
+    "host_permissions": ["https://*.youtube.com/*", "https://*.discord.com/*", "https://*.twitch.com/*", "https://*.facebook.com/*"],
+    "background": {
+        "service_worker": "src/background.js"
+    },
+    "content_scripts": [
+        {
+            "matches": ["https://*/*"],
+            "js": ["src/contentScripts.js"]
+        }
+    ],
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "src/assets/delete.png"
+            ],
+            "matches": ["https://*/*"]
+        }
+    ],
+    "action": {
+        "default_icon": {
+            "16": "src/assets/focus-mode-icon.png",
+            "24": "src/assets/focus-mode-icon.png",
+            "32": "src/assets/focus-mode-icon.png"
+        },
+        "default_title": "Focus mode extension",
+        "default_popup": "src/popup.html"
+    },
+    "manifest_version": 3
+}
