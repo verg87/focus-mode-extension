@@ -1,0 +1,3 @@
+const sendMessageToContentScript = (tabId, url) => {
+
+}

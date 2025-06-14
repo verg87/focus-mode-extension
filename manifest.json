@@ -2,7 +2,7 @@
     "name": "Focus mode extension",
     "version": "1.0.0",
     "description": "Blocks and safes you time from destracting sites",
-    "permissions": ["tabs"],
+    "permissions": ["tabs", "storage"],
     "host_permissions": ["https://*.youtube.com/*", "https://*.discord.com/*", "https://*.twitch.com/*", "https://*.facebook.com/*"],
     "background": {
         "service_worker": "src/background.js"
