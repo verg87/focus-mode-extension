@@ -1,51 +1,59 @@
-import { getCurrentTab, createElementFromString } from "./utils.js"; 
+import { trimUrl } from "./utils.js";
 
 const blockedSitesDiv = document.getElementById('blocked-sites-list');
+const checkbox = document.querySelector('input[type="checkbox"]');
+const isBlocking = await chrome.storage.sync.get('isBlocking');
 
-const validateURL = (text) => /^https?:\/\/.+\.[a-z]+/.test(text)
-const makeParagraph = (url) => `<strong>${url}</strong><img src="assets/delete.png">`;
+checkbox.checked = isBlocking['isBlocking'] ? true : false;
 
-const loadSitesList = (sites) => {
-    const htmlStrings = sites.map((site) => makeParagraph(site));
-    const paragraphs = [...blockedSitesDiv.children].map((para) => para.innerHTML);
-    
-    htmlStrings.forEach((str) => {
-        if (!paragraphs.includes(str)) {
-            const element = `<p id="blocked-site">${str}</p>`
-            blockedSitesDiv.innerHTML += element;
+const makeParagraph = (url) => `<p id="blocked-site"><strong>${url}</strong><img src="assets/delete.png"></p>`;
+
+const loadSitesList = async () => {
+    const storage = await chrome.storage.sync.getKeys();
+    const sites = storage.filter(key => key !== 'isBlocking');
+
+    const paragraphs = [...blockedSitesDiv.children].map((para) => para.textContent);
+        
+    sites.forEach((site) => {
+        if (!paragraphs.includes(site)) {
+            blockedSitesDiv.innerHTML += makeParagraph(site);
         }
     });
 };
 
-chrome.storage.sync.getKeys(loadSitesList);
+loadSitesList();
 
 blockedSitesDiv.addEventListener('click', (e) => {
     if (e.target.nodeName !== 'IMG') 
         return;
 
+    const url = e.target.parentNode.textContent;
+
+    chrome.storage.sync.remove(url);
     e.target.parentNode.remove();
 });
 
-document.getElementById('add-site').addEventListener('keydown', (e) => {
-    if (e.key !== 'Enter' || !validateURL(e.target.value)) 
-        return;
+document.getElementById('add-site').addEventListener('keydown', async (e) => {
+    const url = trimUrl(e.target.value);
+    const storage = await chrome.storage.sync.getKeys();
 
-    blockedSitesDiv.innerHTML += `<p id="blocked-site">${makeParagraph(e.target.value)}</p>`;
+    if (e.key !== 'Enter' || !url) return;
+    if (storage.includes(url)) return;
+
+    const isBlockingSites = await chrome.storage.sync.get('isBlocking');
+
+    chrome.storage.sync.set({[url]: isBlockingSites['isBlocking']}, () => console.log(`Set ${url} to ${isBlockingSites['isBlocking']}`));
+
+    blockedSitesDiv.innerHTML += makeParagraph(url);
 });
 
-document.querySelector('.switch').addEventListener('click', (e) => {
-    if (e.target.nodeName === "INPUT") return;
-
+checkbox.addEventListener('change', (e) => {
     const sites = [...blockedSitesDiv.children];
+    chrome.storage.sync.set({"isBlocking": e.target.checked})
+        
+    sites.forEach((blockedSite) => {
+        const key = blockedSite.textContent;
 
-    sites.forEach(async (blockedSite) => {
-        const key = blockedSite.innerText;
-        const keyExists = await chrome.storage.sync.get(key);
-
-        if (keyExists[key]) {
-            chrome.storage.sync.remove(key, () => console.log(`Removed ${key} key`));
-        } else {
-            chrome.storage.sync.set({[key]: key}, () => console.log(`Set ${key} to itself`));
-        }
+        chrome.storage.sync.set({[key]: e.target.checked}, () => console.log(`Set ${key} to ${e.target.checked}`));
     })
-})
+});

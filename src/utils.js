@@ -13,3 +13,12 @@ export function createElementFromString(html) {
     template.innerHTML = html.trim();
     return template.content.firstElementChild;
 }
+
+export const trimUrl = (url) => {
+    try {
+        const urlObject = new URL(url);
+        return urlObject.hostname;
+    } catch (e) {
+        return false
+    }   
+}
