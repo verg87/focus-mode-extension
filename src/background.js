@@ -7,20 +7,33 @@ const trimUrl = (url) => {
     }   
 }
 
+const setValues = () => {
+    chrome.storage.sync.set({'isBlocking': false});
+}
+
 const sendMessageToContentScript = async (tabId, url) => {
     const storage = await chrome.storage.sync.getKeys();
     const sites = storage.filter(key => key !== "isBlocking");
 
     url = trimUrl(url);
 
-    const permission = await chrome.storage.sync.get([url]);
+    let permission = false;
+
+    try {
+        permission = await chrome.storage.sync.get([url]);
+        permission = permission[url];
+    } catch(e) {
+        console.log(e);
+    }
+
     console.log(url);
+    console.log(sites);
     console.log(permission);
 
-    if (url && sites.includes(url) && permission[url]) {
+    if (url && sites.includes(url) && permission) {
         chrome.tabs.sendMessage(tabId, {
             type: "BLOCK",
-            hostname: url,
+            message: url,
             }, (response) => {
             if (chrome.runtime.lastError) {
                 console.log(`Error: ${chrome.runtime.lastError.message}`);
@@ -41,4 +54,9 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete') {
     sendMessageToContentScript(tabId, tab.url);
   }
+});
+
+chrome.runtime.onInstalled.addListener((details) => {
+    console.log(details);
+    setValues();
 });
