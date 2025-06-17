@@ -6,28 +6,25 @@
         console.log(type, message);
 
         if (type === 'BLOCK') {
-            setDisplayToNone();
+            removeBodyElements();
             informThatPageIsBlockedToUser();
-
-            return response({status: ok});
         }
-
-        return true;
     })
 
-    const setDisplayToNone = () => {
+    const removeBodyElements = () => {
         body = document.querySelector('body')
         const bodyChildren = [...body.children];
 
-        bodyChildren.forEach((el) => el.style.display = 'none');
+        bodyChildren.forEach((el) => el.remove());
     }
 
     const informThatPageIsBlockedToUser = () => {
         const div = document.createElement('div');
 
         div.className = "blocked-page";
-        div.textContent = "This page is blocked, so you can go and touch grass"
+        div.innerHTML = `<img src="${chrome.runtime.getURL('src/assets/focus-mode-icon.png')}">`
+        div.innerHTML += `<p class="blocked-page-para">This page is blocked so you can go and touch grass</p>`;
 
         body.appendChild(div);
     }
-})
+})();
