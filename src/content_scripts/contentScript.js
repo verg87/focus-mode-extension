@@ -20,10 +20,17 @@
 
     const informThatPageIsBlockedToUser = () => {
         const div = document.createElement('div');
+        const message = document.createElement('p');
 
         div.className = "blocked-page";
-        div.innerHTML = `<img src="${chrome.runtime.getURL('src/assets/focus-mode-icon.png')}">`
-        div.innerHTML += `<p class="blocked-page-para">This page is blocked so you can go and touch grass</p>`;
+
+        message.className = "message-container";
+        message.innerHTML += `<span>
+            <img src="${chrome.runtime.getURL('src/assets/focus-mode-icon.png')}">
+            <br>This page is blocked<br><span class="msg-hint"><i>so you can go and touch some grass</i></span>
+        </span>`;
+
+        div.appendChild(message);
 
         body.appendChild(div);
     }

@@ -9,7 +9,6 @@ const trimUrl = (url) => {
 
 const setInitialValues = () => {
     chrome.storage.sync.set({
-        "isBlocking": false,
         "www.youtube.com": false,
         "discord.com": false,
         "www.twitch.tv": false,
@@ -20,19 +19,18 @@ const setInitialValues = () => {
 const sendMessageToContentScript = async (tabId, url) => {
     const storage = await chrome.storage.sync.get(null);
     const sites = Object.keys(storage).filter(key => key !== "isBlocking");
+    let block = false;
 
     url = trimUrl(url);
 
-    let permission = false;
-
     try {
-        permission = await chrome.storage.sync.get([url]);
-        permission = permission[url];
+        block = await chrome.storage.sync.get([url]);
+        block = block[url];
     } catch(e) {
         console.log(e);
     }
 
-    if (url && sites.includes(url) && permission) {
+    if (url && sites.includes(url) && block) {
         chrome.tabs.sendMessage(tabId, {
             type: "BLOCK",
             message: url,
