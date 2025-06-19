@@ -1,3 +1,9 @@
+async function getCurrentTab() {
+    let queryOptions = { active: true, lastFocusedWindow: true };
+    let [tab] = await chrome.tabs.query(queryOptions);
+    return tab;
+}
+
 const trimUrl = (url) => {
     try {
         const urlObject = new URL(url);
@@ -21,8 +27,6 @@ const sendMessageToContentScript = async (tabId, url) => {
     const sites = Object.keys(storage).filter(key => key !== "isBlocking");
     let block = false;
 
-    url = trimUrl(url);
-
     try {
         block = await chrome.storage.sync.get([url]);
         block = block[url];
@@ -44,16 +48,39 @@ const sendMessageToContentScript = async (tabId, url) => {
     }
 }
 
+const listenForBlockedPage = async (checked, hostname) => {
+    const tab = await getCurrentTab();
+    const currentTabHostname = trimUrl(tab['url']);
+
+    if (!checked && hostname === currentTabHostname) {
+        chrome.tabs.reload(tab.id);
+    } else if (checked && hostname === currentTabHostname) {
+        sendMessageToContentScript(tab.id, currentTabHostname);
+    }
+}
+
 chrome.tabs.onActivated.addListener((activeInfo) => {
     chrome.tabs.get(activeInfo.tabId, (tab) => {
-        sendMessageToContentScript(activeInfo.tabId, tab.url)
+        sendMessageToContentScript(activeInfo.tabId, trimUrl(tab.url))
     })
 })
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (changeInfo.status === 'complete') {
-        sendMessageToContentScript(tabId, tab.url);
+        sendMessageToContentScript(tabId, trimUrl(tab.url));
     } 
+});
+
+chrome.storage.sync.onChanged.addListener((changes) => {
+    const url = Object.keys(changes)[0];
+    
+    const match = changes[url];
+    const keySet = !Object.hasOwn(match, 'oldValue') && match['newValue'] === false;
+    const keyRemoved = !Object.hasOwn(match, 'newValue') && match['oldValue'] === false;
+
+    if (match && !keySet && !keyRemoved) {
+        listenForBlockedPage(match['newValue'], url);
+    }
 });
 
 chrome.runtime.onInstalled.addListener((details) => {

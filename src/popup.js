@@ -1,4 +1,4 @@
-import { trimUrl, getCurrentTab } from "./utils.js";
+import { trimUrl } from "./utils.js";
 
 const blockedSitesDiv = document.getElementById('blocked-sites-list');
 const checkbox = document.querySelector('input[type="checkbox"]');
@@ -7,26 +7,6 @@ const isBlocking = await chrome.storage.sync.get('isBlocking');
 checkbox.checked = isBlocking['isBlocking'] ? true : false;
 
 const makeParagraph = (url) => `<p id="blocked-site"><strong>${url}</strong><img src="assets/delete.png"></p>`;
-
-const toggleShowBlockPage = async (checked, hostname) => {
-    const tab = await getCurrentTab();
-    const currentTabHostname = trimUrl(tab['url']);
-
-    if (!checked && hostname === currentTabHostname) {
-        chrome.tabs.reload(tab.id);
-    } else if (checked && hostname === currentTabHostname) {
-        chrome.tabs.sendMessage(tab.id, {
-            type: "BLOCK",
-            message: hostname,
-            }, (response) => {
-                if (chrome.runtime.lastError) {
-                    console.log(`Error: ${chrome.runtime.lastError.message}`);
-                } else {
-                    console.log(`Received response: ${response}`);
-                }
-        });
-    }
-}
 
 const loadSitesList = async () => {
     const storage = await chrome.storage.sync.getKeys();
@@ -60,10 +40,11 @@ document.getElementById('add-site').addEventListener('keydown', async (e) => {
     if (e.key !== 'Enter' || !url) return;
     if (storage.includes(url)) return;
 
-    const isBlockingSites = await chrome.storage.sync.get('isBlocking');
+    const { isBlocking } = await chrome.storage.sync.get('isBlocking');
 
-    chrome.storage.sync.set({[url]: isBlockingSites['isBlocking']}, () => console.log(`Set ${url} to ${isBlockingSites['isBlocking']}`));
+    chrome.storage.sync.set({[url]: isBlocking}, () => console.log(`Set ${url} to ${isBlocking}`));
 
+    e.target.value = '';
     blockedSitesDiv.innerHTML += makeParagraph(url);
 });
 
@@ -72,10 +53,9 @@ checkbox.addEventListener('change', (e) => {
     
     chrome.storage.sync.set({"isBlocking": e.target.checked})
         
-    sites.forEach(async (blockedSite) => {
+    sites.forEach((blockedSite) => {
         const hostname = blockedSite.textContent;
-        await toggleShowBlockPage(e.target.checked, hostname);
 
-        chrome.storage.sync.set({[hostname]: e.target.checked}, () => console.log(`Set ${key} to ${e.target.checked}`));
+        chrome.storage.sync.set({[hostname]: e.target.checked}, () => console.log(`Set ${hostname} to ${e.target.checked}`));
     })
 });
