@@ -72,15 +72,19 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 });
 
 chrome.storage.sync.onChanged.addListener((changes) => {
-    const url = Object.keys(changes)[0];
-    
-    const match = changes[url];
-    const keySet = !Object.hasOwn(match, 'oldValue') && match['newValue'] === false;
-    const keyRemoved = !Object.hasOwn(match, 'newValue') && match['oldValue'] === false;
+    const changedKeys = Object.keys(changes);
+    if (changedKeys.length === 0) return; 
+  
+    const url = changedKeys[0];
+    const { oldValue, newValue } = changes[url] || {};
 
-    if (match && !keySet && !keyRemoved) {
-        listenForBlockedPage(match['newValue'], url);
-    }
+    //* listenForBlockedPage should be only called when:
+    //* either newValue is true and oldValue is false/undefiend or the other way around
+    if (newValue && !oldValue) {
+        listenForBlockedPage(true, url);
+    } else if (oldValue && !newValue) {
+        listenForBlockedPage(false, url);
+  }
 });
 
 chrome.runtime.onInstalled.addListener((details) => {
