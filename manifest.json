@@ -1,6 +1,6 @@
 {
     "name": "Focus mode extension",
-    "version": "1.2.0",
+    "version": "1.2.4",
     "description": "Blocks and safes you time from destracting sites",
     "permissions": ["tabs", "storage"],
     "host_permissions": ["https://*/*", "http://*/*"],
