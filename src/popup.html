@@ -5,32 +5,15 @@
     </head>
     <body>
         <div class="container">
-            <div class="sites">
-                <h1>List of blocked sites:</h1>
-                <label class="switch">
-                    <input type="checkbox" id="sites-switch">
-                    <span class="slider"></span>
-                </label>
-                <label class="add-label" for="add-site">Add</label>
-                <input type="text" id="add-site" placeholder="example.com">
-                <div id="blocked-sites-list"></div>
-            </div>
-            <div class="words" style="display: none;">
-                <h1>List of blocked words:</h1>
-                <label class="switch">
-                    <input type="checkbox" id="words-switch">
-                    <span class="slider"></span>
-                </label>
-                <label class="add-label" for="add-word">Add</label>
-                <input type="text" id="add-word" placeholder="financial">
-                <div id="blocked-words-list"></div>
-            </div>
-        </div>
-        <div class="pages">
-            <button class="blocked-sites" type="button">Blocked sites</button>
-            <button class="blocked-words" type="button">Blocked words</button>
+            <h1>List of blocked sites:</h1>
+            <label class="switch">
+                <input type="checkbox">
+                <span class="slider"></span>
+            </label>
+            <label class="add-label" for="add-site">Add</label>
+            <input type="text" id="add-site" placeholder="example.com">
+            <div id="blocked-sites-list"></div>
         </div>
     </body>
-    <script type="module" src="sites-popup.js"></script>
-    <script src="words-popup..js"></script>
+    <script type="module" src="popup.js"></script>
 </html>
