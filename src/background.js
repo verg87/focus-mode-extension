@@ -40,15 +40,19 @@ const sendMessageToContentScript = async (tabId, url) => {
     }
 }
 
-const listenForBlockedPage = async (checked, deleted, added) => {
+const listenForBlockedPage = async (checked, hostname, type) => {
     const tab = await getCurrentTab();
     const currentTabHostname = trimUrl(tab['url']);
     const { sites } = await chrome.storage.sync.get('sites');
 
-    if ((!checked && sites.includes(currentTabHostname)) || (!checked && deleted)) { // Doesn't work
+    if (!checked && sites.includes(currentTabHostname) && !type) { 
         chrome.tabs.reload(tab.id);
-    } else if ((checked && sites.includes(currentTabHostname)) || (checked && added)) {
+    } else if (checked && sites.includes(currentTabHostname) && !type) {
         sendMessageToContentScript(tab.id, currentTabHostname);
+    } else if (checked && hostname === currentTabHostname && type === 'added') {
+        sendMessageToContentScript(tab.id, currentTabHostname);
+    } else if (checked && hostname === currentTabHostname && type === 'deleted') {
+        chrome.tabs.reload(tab.id);
     }
 }
 
@@ -65,36 +69,21 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 });
 
 chrome.storage.sync.onChanged.addListener(async (changes) => {
-    const changedKeys = Object.keys(changes);
-    console.log(changes);
-    if (changedKeys.length === 0) return; 
-  
-    const url = changedKeys[0];
-    const { oldValue, newValue } = changes[url] || {};
-    let deleted, added;
-    
-    // Doesn't work
-    if (Array.isArray(oldValue) && Array.isArray(newValue)) {
-        if (oldValue.length < newValue.length) {
-            added = true;
-            deleted = false;
-        } else {
-            added = false;
-            deleted = true;
-        }
-    }
+    const { isBlocking } = await chrome.storage.sync.get('isBlocking');
+    const { sites } = changes;
 
-    //* listenForBlockedPage should be only called when:
-    //* either newValue is true and oldValue is false/undefiend or the other way around
-    if (newValue && !oldValue) {
-        listenForBlockedPage(true, deleted, added);
-    } else if (oldValue && !newValue) {
-        listenForBlockedPage(false, deleted, added);
-    }
-
-    // const { isBlocking } = await chrome.storage.sync.get('isBlocking');
+    if (!sites) {
+        listenForBlockedPage(isBlocking);
+        return;
+    } 
     
-    // listenForBlockedPage(isBlocking, sites);
+    if (sites['newValue'].length > sites['oldValue'].length) {
+        const added = sites['newValue'].filter((site) => !sites['oldValue'].includes(site))[0];
+        listenForBlockedPage(isBlocking, added, 'added');
+    } else {
+        const deleted = sites['oldValue'].filter((site) => !sites['newValue'].includes(site))[0];
+        listenForBlockedPage(isBlocking, deleted, 'deleted');
+    }
 });
 
 chrome.runtime.onInstalled.addListener((details) => {
