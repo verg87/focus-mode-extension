@@ -3,7 +3,7 @@
 
     chrome.runtime.onMessage.addListener((obj, sender, response) => {
         const { type, message } = obj;
-        console.log(type, message);
+        // console.log(type, message);
 
         if (type === 'BLOCK') {
             removeBodyElements();

@@ -1,19 +1,13 @@
-import { trimUrl } from "./utils.js";
+import { trimUrl, makeParagraph, loadBlockedList } from "./utils.js";
 
 (async () => {
     const blockedSitesDiv = document.getElementById('blocked-sites-list');
-    const toggleBlockingCheckbox = document.querySelector('#sites-switch');
+    const toggleBlockingSitesCheckbox = document.querySelector('#sites-switch');
     const sitesSection = document.querySelector('.sites');
     const wordsSection = document.querySelector('.words');
     const blockedSitesBtn = document.querySelector('.blocked-sites');
     const blockedWordsBtn = document.querySelector('.blocked-words');
     const addSiteInput = document.querySelector('#add-site');
-
-    const makeParagraph = (url) => 
-        `<p id="blocked-site">
-            <strong>${url}</strong>
-            <img src="assets/delete.png">
-        </p>`;
     
     const toggleDisplay = (e) => {
         if (e.target.className === 'blocked-sites') {
@@ -33,7 +27,7 @@ import { trimUrl } from "./utils.js";
 
         let { sites } = await chrome.storage.sync.get('sites');
         sites = sites.filter((site) => site !== url);
-        chrome.storage.sync.set({sites,}, () => console.log(`Removed ${url} from blocked sites`));
+        chrome.storage.sync.set({sites}, () => console.log(`Removed ${url} from blocked sites`));
 
         e.target.parentNode.remove();
     }
@@ -46,42 +40,30 @@ import { trimUrl } from "./utils.js";
         if (sites.includes(url)) return;
 
         sites.push(url);
-        chrome.storage.sync.set({sites,}, () => console.log(`Added ${url} to blocked sites`));
+        chrome.storage.sync.set({sites}, () => console.log(`Added ${url} to blocked sites`));
 
         e.target.value = '';
-        blockedSitesDiv.innerHTML += makeParagraph(url);
+        blockedSitesDiv.innerHTML += makeParagraph("blocked-site", url);
     }
 
-    const loadSiteList = async () => {
-        const { sites } = await chrome.storage.sync.get('sites');
-
-        const paragraphs = [...blockedSitesDiv.children].map((para) => para.textContent);
-            
-        sites.forEach((site) => {
-            if (!paragraphs.includes(site)) {
-                blockedSitesDiv.innerHTML += makeParagraph(site);
-            }
-        });
-    };
-
-    const toggleBlocking = (e) => {
-        chrome.storage.sync.set({"isBlocking": e.target.checked});
+    const toggleBlockingSites = (e) => {
+        chrome.storage.sync.set({"blockSites": e.target.checked});
     }
 
-    const initialize = async () => {
-        const { isBlocking } = await chrome.storage.sync.get('isBlocking');
-        toggleBlockingCheckbox.checked = isBlocking ? true : false;
+    const initializeSiteSection = async () => {
+        const { blockSites } = await chrome.storage.sync.get('blockSites');
+        toggleBlockingSitesCheckbox.checked = blockSites ? true : false;
 
-        loadSiteList();
+        loadBlockedList('sites', blockedSitesDiv);
 
         blockedSitesDiv.addEventListener('click', removeSite);
         addSiteInput.addEventListener('keydown', addSite);
 
-        toggleBlockingCheckbox.addEventListener('change', toggleBlocking);
+        toggleBlockingSitesCheckbox.addEventListener('change', toggleBlockingSites);
 
         blockedWordsBtn.addEventListener('click', toggleDisplay);
         blockedSitesBtn.addEventListener('click', toggleDisplay);
     }
 
-    initialize();
+    initializeSiteSection();
 })();
