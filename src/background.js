@@ -14,18 +14,15 @@ const trimUrl = (url) => {
 }
 
 const listenForBlockedWords = async (tab) => {
-    const url = new URLSearchParams(tab.url);
     const { words } = await chrome.storage.sync.get('words');
     const { blockWords } = await chrome.storage.sync.get('blockWords');
 
-    for (let value of url.values()) {
-        if (words.includes(value) && blockWords) {
-            sendMessageToContentScript(tab.id, tab.url);
-        }
+    if (words.some((word) => tab.url.search(word) !== -1) && blockWords) {
+        sendMessageToContentScript(tab.id);
     }
 }
 
-const listenForBlockedSites = async (tab, oldValue, newValue) => {
+const listenForBlockedSites = async (tab, newValue, oldValue) => {
     const url = trimUrl(tab.url);
     const { sites } = await chrome.storage.sync.get('sites');
     const { blockSites } = await chrome.storage.sync.get('blockSites');
@@ -33,10 +30,10 @@ const listenForBlockedSites = async (tab, oldValue, newValue) => {
     if (sites.includes(url) && blockSites) {
         sendMessageToContentScript(tab.id);
     } else if (sites.includes(url) && !blockSites) {
-        chrome.tabs.reload(tab.id);
+        // chrome.tabs.reload(tab.id);
     }
 
-    // else if (!sites.includes(url) && !oldValue && newValue) {
+    // else if (sites.includes(url) && newValue.length < oldValue.length) {
     //     chrome.tabs.reload(tab.id);
     // } else if (sites.includes(url) && oldValue && !newValue) {
     //     chrome.tabs.reload(tab.id);
@@ -52,7 +49,7 @@ const setInitialValues = () => {
     ], words: []});
 }
 
-const sendMessageToContentScript = async (tabId) => {
+const sendMessageToContentScript = (tabId) => {
     chrome.tabs.sendMessage(tabId, {
         type: "BLOCK",
         }, (response) => {
@@ -64,14 +61,26 @@ const sendMessageToContentScript = async (tabId) => {
     });
 }
 
-const listenForBlockedPage = async (checked, hostname, type) => {
+const listenForBlockedPage = async (checked, items, hostname, type) => {
     const tab = await getCurrentTab();
     const currentTabHostname = trimUrl(tab['url']);
-    const { sites } = await chrome.storage.sync.get('sites');
 
-    if (!checked && sites.includes(currentTabHostname) && !type) { 
+    checked = checked['newValue'] !== undefined ? checked['newValue'] : checked;
+    const keywordIn = items.some((item) => tab.url.search(item) !== -1)
+
+    if (keywordIn && checked) {
+        sendMessageToContentScript(tab.id);
+    } else if (keywordIn && !checked && !type) {
         chrome.tabs.reload(tab.id);
-    } else if (checked && sites.includes(currentTabHostname) && !type) {
+    } else if (type === 'deleted' && checked) {
+        chrome.tabs.reload(tab.id);
+    } else if (type === 'added' && checked) {
+        sendMessageToContentScript(tab.id)
+    }
+
+    if (!checked && items.includes(currentTabHostname) && !type) { 
+        chrome.tabs.reload(tab.id);
+    } else if (checked && items.includes(currentTabHostname) && !type) {
         sendMessageToContentScript(tab.id);
     } else if (checked && hostname === currentTabHostname && type === 'added') {
         sendMessageToContentScript(tab.id);
@@ -95,29 +104,43 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 });
 
 chrome.storage.sync.onChanged.addListener(async (changes) => {
-    const tab = await getCurrentTab();
+    let key = Object.keys(changes)[0];
+    let blockItems, items;
+   
+    if (key === "blockSites") {
+        const obj = await chrome.storage.sync.get('sites');
 
-    const { blockSites } = changes;
-    const { blockWords } = changes;
+        blockItems = changes['blockSites'];
+        items = obj['sites'];
+    } else if (key === "blockWords") {
+        const obj = await chrome.storage.sync.get('words');
 
+        blockItems = changes['blockWords'];
+        items = obj['words'];
+    } else if (key === "sites") {
+        const obj = await chrome.storage.sync.get('blockSites');
 
-    listenForBlockedSites(tab, blockSites?.oldValue, blockSites?.newValue);
-    listenForBlockedWords(tab, blockWords?.oldValue, blockWords?.newValue);
-    // const { blockSites } = await chrome.storage.sync.get('blockSites');
-    // const { sites } = changes;
+        blockItems = obj['blockSites'];
+        items = changes['sites'];
+    } else if (key === "words") {
+        const obj = await chrome.storage.sync.get('blockWords');
 
-    // if (!sites) {
-    //     listenForBlockedPage(blockSites);
-    //     return;
-    // } 
+        blockItems = obj['blockWords'];
+        items = changes['words'];
+    }
+
+    if (items['newValue'] && items['oldValue']) {
+        if (items['newValue'].length > items['oldValue'].length) {
+            const added = items['newValue'].filter((item) => !items['oldValue'].includes(item))[0];
+            listenForBlockedPage(blockItems, items['newValue'], added, 'added');
+        } else {
+            const deleted = items['oldValue'].filter((item) => !items['newValue'].includes(item))[0];
+            listenForBlockedPage(blockItems, items['newValue'], deleted, 'deleted');
+        }
+    } else {
+        listenForBlockedPage(blockItems, items);
+    }
     
-    // if (sites['newValue'].length > sites['oldValue'].length) {
-    //     const added = sites['newValue'].filter((site) => !sites['oldValue'].includes(site))[0];
-    //     listenForBlockedPage(blockSites, added, 'added');
-    // } else {
-    //     const deleted = sites['oldValue'].filter((site) => !sites['newValue'].includes(site))[0];
-    //     listenForBlockedPage(blockSites, deleted, 'deleted');
-    // }
 });
 
 chrome.runtime.onInstalled.addListener((details) => {
