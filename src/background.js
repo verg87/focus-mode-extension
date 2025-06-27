@@ -13,31 +13,23 @@ const trimUrl = (url) => {
     }   
 }
 
-const listenForBlockedWords = async (tab) => {
-    const { words } = await chrome.storage.sync.get('words');
-    const { blockWords } = await chrome.storage.sync.get('blockWords');
+const checkCurrentTab = async () => {
+    const { blockSites, sites, blockWords, words } = 
+        await chrome.storage.sync.get(['blockSites', 'sites', 'blockWords', 'words']);
+    
+    const dataSites = {
+        blockItems: { type: 'blockSites', value: blockSites },
+        items: { type: 'sites', value: sites, modified: 'CCTCalle' }
+    };
+    const dataWords = {
+        blockItems: { type: 'blockWords', value: blockWords },
+        items: { type: 'words', value: words, modified: 'CCTCalle' }
+    };
 
-    if (words.some((word) => tab.url.search(word) !== -1) && blockWords) {
-        sendMessageToContentScript(tab.id);
-    }
-}
+    console.log(dataSites, dataWords);
 
-const listenForBlockedSites = async (tab, newValue, oldValue) => {
-    const url = trimUrl(tab.url);
-    const { sites } = await chrome.storage.sync.get('sites');
-    const { blockSites } = await chrome.storage.sync.get('blockSites');
-
-    if (sites.includes(url) && blockSites) {
-        sendMessageToContentScript(tab.id);
-    } else if (sites.includes(url) && !blockSites) {
-        // chrome.tabs.reload(tab.id);
-    }
-
-    // else if (sites.includes(url) && newValue.length < oldValue.length) {
-    //     chrome.tabs.reload(tab.id);
-    // } else if (sites.includes(url) && oldValue && !newValue) {
-    //     chrome.tabs.reload(tab.id);
-    // }
+    listenForBlockedPage(dataSites);
+    listenForBlockedPage(dataWords);
 }
 
 const setInitialValues = () => {
@@ -61,88 +53,80 @@ const sendMessageToContentScript = (tabId) => {
     });
 }
 
-const listenForBlockedPage = async (checked, items, hostname, type) => {
+
+const listenForBlockedPage = async ({blockItems, items}) => {
     const tab = await getCurrentTab();
     const currentTabHostname = trimUrl(tab['url']);
 
-    checked = checked['newValue'] !== undefined ? checked['newValue'] : checked;
-    const keywordIn = items.some((item) => tab.url.search(item) !== -1)
+    const checked = blockItems.hasOwnProperty('newValue') ? blockItems['newValue'] : blockItems['value'];
+    const values = items.hasOwnProperty('newValue') ? items['newValue'] : items['value'];
+    const type = items['modified'];
 
-    if (keywordIn && checked) {
+    const hasBlockedItems = items.type === 'sites'
+        ? values.includes(currentTabHostname)
+        : values.some(value => tab.url.includes(value));
+
+    if (hasBlockedItems && checked && (!type || type === 'CCTCalle')) {
         sendMessageToContentScript(tab.id);
-    } else if (keywordIn && !checked && !type) {
+    } else if (hasBlockedItems && !checked && !type) {
         chrome.tabs.reload(tab.id);
-    } else if (type === 'deleted' && checked) {
+    } else if (!hasBlockedItems && checked && type === 'deleted') {
         chrome.tabs.reload(tab.id);
-    } else if (type === 'added' && checked) {
+    } else if (hasBlockedItems && checked && type === 'added') {
         sendMessageToContentScript(tab.id)
-    }
-
-    if (!checked && items.includes(currentTabHostname) && !type) { 
-        chrome.tabs.reload(tab.id);
-    } else if (checked && items.includes(currentTabHostname) && !type) {
-        sendMessageToContentScript(tab.id);
-    } else if (checked && hostname === currentTabHostname && type === 'added') {
-        sendMessageToContentScript(tab.id);
-    } else if (checked && hostname === currentTabHostname && type === 'deleted') {
-        chrome.tabs.reload(tab.id);
     }
 }
 
 chrome.tabs.onActivated.addListener((activeInfo) => {
     chrome.tabs.get(activeInfo.tabId, (tab) => {
-        listenForBlockedSites(tab);
-        listenForBlockedWords(tab);
+        checkCurrentTab();
     })
 })
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (changeInfo.status === 'complete') {
-        listenForBlockedSites(tab);
-        listenForBlockedWords(tab);
+        checkCurrentTab();
     } 
 });
 
 chrome.storage.sync.onChanged.addListener(async (changes) => {
-    let key = Object.keys(changes)[0];
-    let blockItems, items;
+    const key = Object.keys(changes)[0];
+    const { newValue, oldValue } = changes[key];
+
+    const data = {
+        blockItems: {},
+        items: {},
+    };
    
-    if (key === "blockSites") {
-        const obj = await chrome.storage.sync.get('sites');
+    if (key === "blockSites" || key === 'blockWords') {
+        const itemsName = key === "blockSites" ? "sites" : "words"
+        const obj = await chrome.storage.sync.get(itemsName);
 
-        blockItems = changes['blockSites'];
-        items = obj['sites'];
-    } else if (key === "blockWords") {
-        const obj = await chrome.storage.sync.get('words');
+        data.blockItems['type'] = key;
+        data.blockItems['newValue'] = newValue;
+        data.blockItems['oldValue'] = oldValue;
 
-        blockItems = changes['blockWords'];
-        items = obj['words'];
-    } else if (key === "sites") {
-        const obj = await chrome.storage.sync.get('blockSites');
-
-        blockItems = obj['blockSites'];
-        items = changes['sites'];
-    } else if (key === "words") {
-        const obj = await chrome.storage.sync.get('blockWords');
-
-        blockItems = obj['blockWords'];
-        items = changes['words'];
-    }
-
-    if (items['newValue'] && items['oldValue']) {
-        if (items['newValue'].length > items['oldValue'].length) {
-            const added = items['newValue'].filter((item) => !items['oldValue'].includes(item))[0];
-            listenForBlockedPage(blockItems, items['newValue'], added, 'added');
-        } else {
-            const deleted = items['oldValue'].filter((item) => !items['newValue'].includes(item))[0];
-            listenForBlockedPage(blockItems, items['newValue'], deleted, 'deleted');
-        }
+        data.items['type'] = itemsName;
+        data.items['value'] = obj[itemsName];
     } else {
-        listenForBlockedPage(blockItems, items);
+        const blockItemsName = key === 'sites' ? 'blockSites' : 'blockWords';
+        const obj = await chrome.storage.sync.get(blockItemsName);
+
+        data.blockItems['type'] = blockItemsName;
+        data.blockItems['value'] = obj[blockItemsName];
+
+        data.items['type'] = key;
+        data.items['newValue'] = newValue;
+        data.items['oldValue'] = oldValue;
+
+        data.items['modified'] = newValue.length > oldValue.length ? 'added' : 'deleted';
     }
-    
+
+    listenForBlockedPage(data);
 });
 
 chrome.runtime.onInstalled.addListener((details) => {
-    setInitialValues();
+    if (details.reason === 'install') {
+        setInitialValues();
+    }
 });
