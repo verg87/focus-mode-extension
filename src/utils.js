@@ -9,7 +9,7 @@ const trimUrl = (url) => {
 
 // Could make something more sofisticated but there's no need for that
 const makeParagraph = (id, text) => 
-    `<div class="position-relative" id="${id}">
+    `<div class="mt-2 mb-1" id="${id}">
         <strong>${text}</strong>
         <img src="assets/delete.png" class="position-absolute end-0" style="width: 20px; height: 20px">
     </div>`;
