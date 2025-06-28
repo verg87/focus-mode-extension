@@ -1,4 +1,4 @@
-export const trimUrl = (url) => {
+const trimUrl = (url) => {
     try {
         const urlObject = new URL(url);
         return urlObject.hostname;
@@ -8,17 +8,17 @@ export const trimUrl = (url) => {
 }
 
 // Could make something more sofisticated but there's no need for that
-export const makeParagraph = (id, text) => 
-    `<p id="${id}">
+const makeParagraph = (id, text) => 
+    `<div class="mt-2 mb-1" id="${id}">
         <strong>${text}</strong>
-        <img src="assets/delete.png">
-    </p>`;
+        <img src="assets/delete.png" class="position-absolute end-0" style="width: 20px; height: 20px">
+    </div>`;
 
-export const trimWord = (word) => {
+const trimWord = (word) => {
     return /^[a-zA-Z']+$/.test(word.trim());
 }
 
-export const loadBlockedList = async (type, listElement) => {
+const loadBlockedList = async (type, listElement) => {
     const obj = await chrome.storage.sync.get(type);
     const items = obj[type];  
 
@@ -28,3 +28,5 @@ export const loadBlockedList = async (type, listElement) => {
         listElement.innerHTML += makeParagraph(id, item);
     });
 };
+
+export {trimUrl, makeParagraph, trimWord, loadBlockedList};

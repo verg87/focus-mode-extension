@@ -26,8 +26,6 @@ const checkCurrentTab = async () => {
         items: { type: 'words', value: words, modified: 'CCTCalle' }
     };
 
-    console.log(dataSites, dataWords);
-
     listenForBlockedPage(dataSites);
     listenForBlockedPage(dataWords);
 }
