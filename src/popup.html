@@ -1,34 +1,44 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <link rel="stylesheet" href="popup.css">
+        <link rel="stylesheet" href="custom.css">
+        <style>
+            .form-check-input:checked {
+                background-color: #22cc3f;
+                border-color: #22cc3f;
+            }
+        
+            .form-check-input:focus {
+                box-shadow: 0 0 0 0.25rem rgba(34, 204, 63, 0.25);
+            }
+        </style>
     </head>
     <body>
         <div class="container">
-            <div class="sites">
-                <h1>List of blocked sites:</h1>
-                <label class="switch">
-                    <input type="checkbox" id="sites-switch">
-                    <span class="slider"></span>
-                </label>
-                <label class="add-label" for="add-site">Add</label>
-                <input type="text" id="add-site" placeholder="example.com">
-                <div id="blocked-sites-list"></div>
+            <div class="sites position-relative">
+                <h1>Sites:</h1>
+                <div class="form-check form-switch" style="display: inline-block;">
+                    <input class="form-check-input" type="checkbox" id="sites-switch" style="width: 44px; height: 20px;">
+                    <label class="form-check-label" for="sites-switch"></label>
+                </div>
+                <label class="position-absolute end-0 border-end border-primary border-2 pe-1" for="add-site">Add</label>
+                <input type="text" id="add-site" class="mt-1" placeholder="example.com">
+                <div class="mt-1" id="blocked-sites-list"></div>
             </div>
-            <div class="words" style="display: none;">
-                <h1>List of blocked words:</h1>
-                <label class="switch">
-                    <input type="checkbox" id="words-switch">
-                    <span class="slider"></span>
-                </label>
-                <label class="add-label" for="add-word">Add</label>
-                <input type="text" id="add-word" placeholder="financial">
-                <div id="blocked-words-list"></div>
+            <div class="words position-relative" style="display: none;">
+                <h1>Keywords:</h1>
+                <div class="form-check form-switch" style="display: inline-block;">
+                    <input class="form-check-input" type="checkbox" id="words-switch" style="width: 44px; height: 20px;">
+                    <label class="form-check-label" for="words-switch"></label>
+                </div>
+                <label class="position-absolute end-0 border-end border-primary border-2 pe-1" for="add-word">Add</label>
+                <input type="text" id="add-word" class="mt-1" placeholder="financial">
+                <div class="mt-1" id="blocked-words-list"></div>
             </div>
         </div>
-        <div class="pages">
-            <button class="blocked-sites" type="button">Blocked sites</button>
-            <button class="blocked-words" type="button">Blocked words</button>
+        <div class="btn-group gap-2 d-md-flex mt-2">
+            <button class="btn btn-sm btn-primary" id="blocked-sites" type="button">Blocked sites</button>
+            <button class="btn btn-sm btn-primary" id="blocked-words" type="button">Blocked words</button>
         </div>
     </body>
     <script type="module" src="sites-popup.js"></script>

@@ -5,12 +5,12 @@ import { trimUrl, makeParagraph, loadBlockedList } from "./utils.js";
     const toggleBlockingSitesCheckbox = document.querySelector('#sites-switch');
     const sitesSection = document.querySelector('.sites');
     const wordsSection = document.querySelector('.words');
-    const blockedSitesBtn = document.querySelector('.blocked-sites');
-    const blockedWordsBtn = document.querySelector('.blocked-words');
+    const blockedSitesBtn = document.querySelector('#blocked-sites');
+    const blockedWordsBtn = document.querySelector('#blocked-words');
     const addSiteInput = document.querySelector('#add-site');
     
     const toggleDisplay = (e) => {
-        if (e.target.className === 'blocked-sites') {
+        if (e.target.id === 'blocked-sites') {
             wordsSection.style.display = 'none';
             sitesSection.style.display = '';
         } else {

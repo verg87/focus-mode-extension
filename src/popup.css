@@ -1,25 +1,13 @@
-body {
+/* body {
     margin: 0;
     padding: 0;
     min-height: 100vh;
     width: 181px;
     display: flex;
     flex-direction: column;
-}
+} */
 
-img {
-    position: absolute;
-    right: 0;
-    width: 20px;
-    height: 20px;
-}
-
-.container {
-    flex-grow: 1;
-    padding-bottom: 30px;
-}
-
-.add-label {
+/* .add-label {
     position: relative;
     font-size: 14px;
     font-weight: bold;
@@ -54,7 +42,7 @@ img {
     padding: 0;
     margin-bottom: 6px;
     box-sizing: border-box;
-}
+/* } */
 
 .slider {
     background-color: #ffffff2b;
@@ -105,4 +93,4 @@ img {
 
 .switch input[type="checkbox"] {
     display: none;
-}
+} 
