@@ -27,7 +27,7 @@ import { trimUrl, makeParagraph, loadBlockedList } from "./utils.js";
 
         let { sites } = await chrome.storage.sync.get('sites');
         sites = sites.filter((site) => site !== url);
-        chrome.storage.sync.set({sites}, () => console.log(`Removed ${url} from blocked sites`));
+        chrome.storage.sync.set({sites});
 
         e.target.parentNode.remove();
     }
@@ -40,7 +40,7 @@ import { trimUrl, makeParagraph, loadBlockedList } from "./utils.js";
         if (sites.includes(url)) return;
 
         sites.push(url);
-        chrome.storage.sync.set({sites}, () => console.log(`Added ${url} to blocked sites`));
+        chrome.storage.sync.set({sites});
 
         e.target.value = '';
         blockedSitesDiv.innerHTML += makeParagraph("blocked-site", url);

@@ -14,7 +14,7 @@ import { trimWord, makeParagraph, loadBlockedList } from "./utils.js";
         let { words } = await chrome.storage.sync.get('words');
 
         words = words.filter((word) => word !== wordToRemove);
-        chrome.storage.sync.set({words}, () => console.log(`Removed ${wordToRemove} from blocked words`));
+        chrome.storage.sync.set({words});
 
         e.target.parentNode.remove();
     }
@@ -27,7 +27,7 @@ import { trimWord, makeParagraph, loadBlockedList } from "./utils.js";
         if (!trimWord(word) || words.includes(word)) return;
         
         words.push(word);
-        chrome.storage.sync.set({words}, () => console.log(`Added ${word} to blocked words`));
+        chrome.storage.sync.set({words});
 
         e.target.value = '';
         blockedWordsDiv.innerHTML += makeParagraph('blocked-word', word);
